@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Science Video Player</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            color: #333;
+            min-height: 100vh;
+            overflow-x: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #7f8c8d;
+            font-size: 1.1rem;
+        }
+
+        .video-player-container {
+            width: 100%;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .custom-video-player {
+            width: 100%;
+            display: block;
+        }
+
+        .video-wrapper {
+            position: relative;
+            width: 100%;
+            padding-top: 56.25%; /* 16:9 Aspect Ratio */
+            background: #000;
+            overflow: hidden;
+        }
+
+        #main-video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            /* Disable native controls to prevent pause on tap */
+            pointer-events: none;
+        }
+
+        .video-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 5;
+            /* This overlay will prevent video controls from showing on tap */
+        }
+
+        .skip-indicator {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 5px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 10;
+        }
+
+        .skip-indicator.left {
+            left: 20px;
+        }
+
+        .skip-indicator.right {
+            right: 20px;
+        }
+
+        .skip-indicator.show {
+            opacity: 1;
+        }
+
+        .skip-indicator i {
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+        }
+
+        .skip-indicator span {
+            font-size: 0.8rem;
+        }
+
+        .video-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: #f1f3f9;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .control-btn {
+            background: #4e54c8;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 45px;
+            height: 45px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .control-btn:hover {
+            background: #3a3fb8;
+            transform: scale(1.05);
+        }
+
+        .control-btn:active {
+            transform: scale(0.95);
+        }
+
+        .play-pause-btn {
+            background: #4e54c8;
+            width: 50px;
+            height: 50px;
+        }
+
+        .speed-control {
+            padding: 8px 15px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .speed-control:hover {
+            background: #f5f5f5;
+        }
+
+        .video-title {
+            font-size: 1.1rem; /* Reduced font size */
+            margin: 15px 0;
+            color: #2c3e50;
+            text-align: center;
+            padding: 0 15px;
+            font-weight: 600;
+        }
+
+        .progress-container {
+            width: 100%;
+            height: 8px;
+            background: #ddd;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 0 15px;
+            cursor: pointer;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(to right, #4e54c8, #8f94fb);
+            width: 0%;
+            border-radius: 4px;
+            transition: width 0.2s;
+        }
+
+        .time-display {
+            font-size: 0.9rem;
+            color: #7f8c8d;
+            min-width: 80px;
+            text-align: center;
+        }
+
+        /* Disable text selection and context menu */
+        body {
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+
+        /* Responsive design */
+        @media (max-width: 600px) {
+            .video-controls {
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+            
+            .control-group {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .progress-container {
+                order: -1;
+                width: 100%;
+                margin: 0 0 10px 0;
+            }
+            
+            .header h1 {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Science Education Hub</h1>
+            <p>Interactive learning experience</p>
+        </div>
+        
+        <div class="video-player-container">
+            <div class="custom-video-player">
+                <div class="video-wrapper">
+                    <video id="main-video" disablePictureInPicture controlsList="nodownload noremoteplayback">
+                        Your browser does not support the video tag.
+                    </video>
+                    <div class="video-overlay" id="video-overlay"></div>
+                    <div class="skip-indicator left" id="skip-back-indicator">
+                        <i class="fas fa-backward"></i>
+                        <span>10s</span>
+                    </div>
+                    <div class="skip-indicator right" id="skip-forward-indicator">
+                        <i class="fas fa-forward"></i>
+                        <span>10s</span>
+                    </div>
+                </div>
+                
+                <h3 class="video-title">SCIENCE || GRAVITATIONAL || CL10</h3>
+                
+                <div class="video-controls">
+                    <div class="time-display" id="current-time">0:00</div>
+                    
+                    <div class="progress-container" id="progress-container">
+                        <div class="progress-bar" id="progress-bar"></div>
+                    </div>
+                    
+                    <div class="time-display" id="duration">0:00</div>
+                    
+                    <div class="control-group">
+                        <button class="control-btn" onclick="skipBackward()">
+                            <i class="fas fa-backward-step"></i>
+                        </button>
+                        <button class="control-btn play-pause-btn" onclick="togglePlayPause()">
+                            <i class="fas fa-play" id="play-pause-icon"></i>
+                        </button>
+                        <button class="control-btn" onclick="skipForward()">
+                            <i class="fas fa-forward-step"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="control-group">
+                        <div class="speed-control" onclick="changeSpeed()">
+                            <span id="speed-text">1x</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div style="text-align: center; margin-top: 20px; color: #7f8c8d;">
+            <p>Double-tap on the left or right side of the video to skip 10 seconds</p>
+        </div>
+    </div>
+
+    <script>
+        // DOM elements
+        const mainVideo = document.getElementById('main-video');
+        const videoOverlay = document.getElementById('video-overlay');
+        const playPauseIcon = document.getElementById('play-pause-icon');
+        const speedText = document.getElementById('speed-text');
+        const skipBackIndicator = document.getElementById('skip-back-indicator');
+        const skipForwardIndicator = document.getElementById('skip-forward-indicator');
+        const progressBar = document.getElementById('progress-bar');
+        const progressContainer = document.getElementById('progress-container');
+        const currentTimeElement = document.getElementById('current-time');
+        const durationElement = document.getElementById('duration');
+
+        // State variables
+        const speeds = [0.5, 1, 1.5, 2];
+        let currentSpeedIndex = 1;
+        let lastTap = 0;
+        let tapTimeout;
+        let isPlaying = false;
+
+        // Initialize video
+        function initVideo() {
+            // Use a sample video for demonstration
+            mainVideo.src = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
+            mainVideo.load();
+            
+            // Set up event listeners
+            mainVideo.addEventListener('timeupdate', updateProgress);
+            mainVideo.addEventListener('ended', videoEnded);
+            progressContainer.addEventListener('click', setProgress);
+            
+            // Prevent context menu on overlay
+            videoOverlay.addEventListener('contextmenu', (e) => e.preventDefault());
+            
+            // Double tap detection for skipping
+            videoOverlay.addEventListener('touchstart', handleVideoTap);
+            
+            // Hide native controls completely
+            mainVideo.controls = false;
+        }
+
+        // Function to handle video tap
+        function handleVideoTap(e) {
+            const currentTime = new Date().getTime();
+            const tapLength = currentTime - lastTap;
+            
+            if (tapLength < 300 && tapLength > 0) {
+                // Double tap detected
+                clearTimeout(tapTimeout);
+                
+                // Determine which side of the video was tapped
+                const videoRect = videoOverlay.getBoundingClientRect();
+                const tapX = e.touches[0].clientX;
+                const videoCenterX = videoRect.left + (videoRect.width / 2);
+                
+                if (tapX < videoCenterX) {
+                    // Left side - skip backward
+                    skipBackward();
+                } else {
+                    // Right side - skip forward
+                    skipForward();
+                }
+                
+                e.preventDefault();
+            } else {
+                // Single tap - don't toggle play/pause
+                tapTimeout = setTimeout(function() {
+                    // No action on single tap
+                }, 300);
+            }
+            
+            lastTap = currentTime;
+        }
+
+        // Function to toggle play/pause
+        function togglePlayPause() {
+            if (mainVideo.paused) {
+                mainVideo.play();
+                playPauseIcon.className = 'fas fa-pause';
+                isPlaying = true;
+            } else {
+                mainVideo.pause();
+                playPauseIcon.className = 'fas fa-play';
+                isPlaying = false;
+            }
+        }
+
+        // Function to skip forward 10 seconds
+        function skipForward() {
+            mainVideo.currentTime += 10;
+            showSkipIndicator(skipForwardIndicator);
+        }
+
+        // Function to skip backward 10 seconds
+        function skipBackward() {
+            mainVideo.currentTime -= 10;
+            showSkipIndicator(skipBackIndicator);
+        }
+
+        // Function to show skip indicator
+        function showSkipIndicator(indicator) {
+            indicator.classList.add('show');
+            setTimeout(() => {
+                indicator.classList.remove('show');
+            }, 1000);
+        }
+
+        // Function to change playback speed
+        function changeSpeed() {
+            currentSpeedIndex = (currentSpeedIndex + 1) % speeds.length;
+            const newSpeed = speeds[currentSpeedIndex];
+            mainVideo.playbackRate = newSpeed;
+            speedText.textContent = newSpeed + 'x';
+        }
+
+        // Update progress bar
+        function updateProgress() {
+            const percent = (mainVideo.currentTime / mainVideo.duration) * 100;
+            progressBar.style.width = `${percent}%`;
+            
+            // Update time displays
+            currentTimeElement.textContent = formatTime(mainVideo.currentTime);
+            
+            if (mainVideo.duration) {
+                durationElement.textContent = formatTime(mainVideo.duration);
+            }
+        }
+
+        // Set progress on click
+        function setProgress(e) {
+            const width = this.clientWidth;
+            const clickX = e.offsetX;
+            const duration = mainVideo.duration;
+            mainVideo.currentTime = (clickX / width) * duration;
+        }
+
+        // Format time in minutes:seconds
+        function formatTime(seconds) {
+            let mins = Math.floor(seconds / 60);
+            let secs = Math.floor(seconds % 60);
+            secs = secs < 10 ? '0' + secs : secs;
+            return `${mins}:${secs}`;
+        }
+
+        // Handle video end
+        function videoEnded() {
+            playPauseIcon.className = 'fas fa-play';
+            isPlaying = false;
+        }
+
+        // Disable right-click context menu
+        document.addEventListener('contextmenu', function(e) {
+            if (e.target.nodeName === 'VIDEO') {
+                e.preventDefault();
+            }
+        });
+
+        // Disable zooming
+        document.addEventListener('wheel', function(e) {
+            if (e.ctrlKey) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && (e.key === '+' || e.key === '-' || e.key === '=')) {
+                e.preventDefault();
+            }
+        });
+
+        // Touch event handling for mobile zoom disable
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', function(event) {
+            const now = (new Date()).getTime();
+            if (now - lastTouchEnd <= 300) {
+                event.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, false);
+
+        // Initialize the video player when page loads
+        window.onload = initVideo;
+    </script>
+</body>
+</html>
