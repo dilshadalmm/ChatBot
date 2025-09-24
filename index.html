@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <!-- Updated viewport meta tag to disable user zoom -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Modern Lecture Player</title>
+    
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Custom styles for the Inter font and dark theme */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a; /* slate-900 */
+            color: #f8fafc; /* slate-50 */
+            margin: 0;
+            padding: 0;
+            /* Disable text selection and copying */
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* Class to show gradient fade on collapsed description */
+        .description-collapsed::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 4rem;
+            background: linear-gradient(to top, #1e293b, transparent);
+            pointer-events: none;
+        }
+        
+        /* Ensure the video player container has no extra space */
+        #video-player-container {
+            line-height: 0;
+        }
+        
+        /*
+        The z-index on the sticky button bar ensures it floats above
+        the main content as it scrolls, preventing any overlap.
+        */
+        #sticky-buttons {
+            z-index: 40;
+            /* Add this relative position to allow the pseudo-element to be positioned correctly */
+            position: relative;
+        }
+        
+        /* Ensure the video player is always on top */
+        #video-player-container {
+            z-index: 50;
+        }
+
+        /* A pseudo-element to extend the background color upwards.
+        It is absolutely positioned from the sticky-buttons container
+        and extends up to fill the gap created by the fixed video player.
+        */
+        #sticky-buttons::before {
+            content: '';
+            position: absolute;
+            /* Set the top position to a negative value equal to the sticky top position
+            to make it start at the very top of the viewport.
+            */
+            top: calc(-1 * var(--sticky-top, 0));
+            /* Extend the background down to the bottom of the sticky bar */
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: #0f172a; /* Match the body background */
+            z-index: -1; /* Place it behind the button content */
+        }
+
+        /* 🚀 HIDE SCROLLBAR COMPLETELY */
+        html {
+            scrollbar-width: none;    /* Firefox */
+            -ms-overflow-style: none; /* IE/Edge */
+        }
+
+        html::-webkit-scrollbar {
+            display: none;            /* Chrome/Safari */
+        }
+
+        body {
+            overflow: auto;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- Fixed video player section at the very top of the screen with a high z-index -->
+    <div id="video-player-container" class="w-full bg-black fixed top-0 left-0">
+        <!-- Replaced iframe with video tag for the .mp4 file -->
+        <video 
+            id="lecture-video"
+            class="w-full h-full object-cover"
+            src="https://edtech.b-cdn.net/Phylum_Annelida_02.mp4"
+            poster="https://edtech.b-cdn.net/images%20(3).jpeg"
+            controls
+            playsinline
+        ></video>
+    </div>
+    
+    <!-- Spacer div to push content below the fixed video player. Its height is set dynamically by JavaScript. -->
+    <div id="video-player-spacer" style="height: 0;"></div>
+
+    <!-- Centered content section below the player -->
+    <div class="container mx-auto p-4 lg:p-8">
+        
+        <!-- Main content area with video details and suggested videos -->
+        <div class="flex flex-col lg:flex-row lg:space-x-8">
+
+            <!-- Primary Content: Video details. Added a relative position and z-index to force it on top of the sibling "Up Next" section. -->
+            <main class="w-full lg:w-2/3 relative z-10">
+                
+                <!-- This is the "Button section" which is now sticky. Its z-index ensures it stays above the content below. -->
+                <div id="sticky-buttons" class="flex flex-col bg-slate-900 transition-colors duration-200" style="position: sticky; top: var(--sticky-top, 0);">
+                    <!-- Video Title is now inside the sticky container -->
+                    <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight text-white mb-3 pt-4">
+                        Lecture 1: The Fundamentals of Quantum Computing
+                    </h1>
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-4 border-b border-slate-700">
+                        <div class="flex items-center space-x-4 mb-4 sm:mb-0">
+                            <img class="w-12 h-12 rounded-full object-cover" src="https://placehold.co/100x100/7e22ce/white?text=Dr.A" alt="Lecturer Avatar">
+                            <div>
+                                <p class="text-lg font-bold text-white">Dr. Evelyn Reed</p>
+                                <p class="text-sm text-slate-400">1.2M Subscribers</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center space-x-2">
+                            <!-- Modern 'Back' icon (Arrow Left) -->
+                            <button class="flex items-center space-x-2 bg-slate-700 hover:bg-slate-600 transition-colors duration-200 rounded-full px-4 py-2 text-sm font-semibold">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                                <span>Back</span>
+                            </button>
+                            <button class="flex items-center space-x-2 bg-slate-700 hover:bg-slate-600 transition-colors duration-200 rounded-full px-4 py-2 text-sm font-semibold">
+                                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" x2="12" y1="2" y2="15"/></svg>
+                                <span>Share</span>
+                            </button>
+                            <!-- Modern 'Module' icon (Four squares) -->
+                            <button class="flex items-center space-x-2 bg-slate-700 hover:bg-slate-600 transition-colors duration-200 rounded-full px-4 py-2 text-sm font-semibold">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
+                                <span>Module</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lecture Description -->
+                <div class="mt-4 bg-slate-800 p-4 rounded-xl">
+                    <p class="font-bold text-sm text-white mb-2">25,789 views • 2 days ago</p>
+                    <div id="description-box" class="relative text-slate-300 text-sm leading-relaxed max-h-20 overflow-hidden transition-all duration-500 ease-in-out description-collapsed">
+                        <p>Welcome to the first lecture in our series on Quantum Computing. In this introductory session, Dr. Reed breaks down the core principles of quantum mechanics that underpin this revolutionary technology. We'll explore concepts like superposition, entanglement, and quantum bits (qubits).</p>
+                        <br>
+                        <p>This course is designed for university students and professionals looking to understand the next wave of computation. No prior knowledge of quantum physics is required, but a background in linear algebra will be beneficial.</p>
+                        <br>
+                        <h3 class="font-bold text-white">Topics Covered:</h3>
+                        <ul class="list-disc list-inside ml-2 mt-1 space-y-1">
+                            <li>History of Quantum Theory</li>
+                            <li>What is a Qubit?</li>
+                            <li>Superposition and its implications</li>
+                            <li>The mystery of Entanglement</li>
+                            <li>Potential applications and future research</li>
+                        </ul>
+                    </div>
+                    <button id="toggle-description" class="font-bold text-sm mt-2 text-purple-400 hover:text-purple-300">Show more</button>
+                </div>
+            </main>
+
+            <!-- Secondary Content: Up Next Playlist -->
+            <aside class="w-full lg:w-1/3 mt-8 lg:mt-0">
+                <h2 class="text-xl font-bold mb-4 lg:pt-4">Up Next in this Course</h2>
+                <div class="space-y-3">
+                    <!-- Currently Playing Video Item -->
+                    <div class="flex space-x-3 bg-slate-800 p-2 rounded-lg ring-2 ring-purple-500">
+                        <div class="relative w-32 flex-shrink-0">
+                            <!-- Updated thumbnail src -->
+                            <img class="w-full h-full object-cover rounded-md" src="https://edtech.b-cdn.net/images%20(3).jpeg" alt="Video thumbnail">
+                             <div class="absolute inset-0 bg-black/50 flex items-center justify-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                             </div>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-sm text-white leading-tight">Lecture 1: The Fundamentals of Quantum Computing</h3>
+                            <p class="text-xs text-slate-400 mt-1">Dr. Evelyn Reed</p>
+                            <p class="text-xs text-slate-500">25K views</p>
+                        </div>
+                    </div>
+
+                    <!-- Other Video Items -->
+                    <div class="flex space-x-3 hover:bg-slate-800/70 p-2 rounded-lg transition-colors duration-200 cursor-pointer">
+                        <!-- Updated thumbnail src -->
+                        <img class="w-32 object-cover rounded-md" src="https://edtech.b-cdn.net/images%20(3).jpeg" alt="Video thumbnail">
+                        <div>
+                            <h3 class="font-semibold text-sm text-white leading-tight">Lecture 2: Quantum Gates and Circuits</h3>
+                            <p class="text-xs text-slate-400 mt-1">Dr. Evelyn Reed</p>
+                            <p class="text-xs text-slate-500">18K views</p>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </div>
+
+    <script>
+        // --- SCRIPT FOR DYNAMIC PLAYER RESIZING AND STICKY HEADER POSITIONING ---
+        const playerContainer = document.getElementById('video-player-container');
+        const spacer = document.getElementById('video-player-spacer');
+        
+        function resizeAndPositionElements() {
+            // Get the full width of the browser window
+            const screenWidth = window.innerWidth;
+            
+            // Calculate height based on the formula: Height = Width * 9 / 16
+            const playerHeight = screenWidth * 9 / 16;
+            
+            // Set the container's height
+            playerContainer.style.height = `${playerHeight}px`;
+
+            // Set the spacer's height to push content down below the fixed player
+            spacer.style.height = `${playerHeight}px`;
+
+            // Set the CSS variable for the sticky button section's 'top' position with a 1rem (16px) gap
+            document.documentElement.style.setProperty('--sticky-top', `${playerHeight + 16}px`);
+        }
+
+        // --- SCRIPT FOR DESCRIPTION TOGGLE ---
+        const toggleButton = document.getElementById('toggle-description');
+        const descriptionBox = document.getElementById('description-box');
+
+        toggleButton.addEventListener('click', () => {
+            const isExpanded = descriptionBox.classList.contains('max-h-screen');
+
+            if (isExpanded) {
+                descriptionBox.classList.remove('max-h-screen');
+                descriptionBox.classList.add('max-h-20', 'description-collapsed');
+                toggleButton.textContent = 'Show more';
+            } else {
+                descriptionBox.classList.remove('max-h-20', 'description-collapsed');
+                descriptionBox.classList.add('max-h-screen');
+                toggleButton.textContent = 'Show less';
+            }
+        });
+        
+        // --- EVENT LISTENERS ---
+        // Resize and position elements when the page first loads
+        window.addEventListener('load', resizeAndPositionElements);
+        // Resize and position elements anytime the window size changes
+        window.addEventListener('resize', resizeAndPositionElements);
+    </script>
+</body>
+</html>
+
